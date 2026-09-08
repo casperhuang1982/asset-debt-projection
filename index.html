@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資產負債三十年推演</title>
+<style>
+  :root {
+    --bg:      #101822;
+    --panel:   #16202C;
+    --panel-2: #1B2735;
+    --line:    #24313F;
+    --line-2:  #2F3F51;
+    --text:    #DCE4EE;
+    --muted:   #8696AA;
+    --asset:   #55C9A8;
+    --debt:    #E4A03C;
+    --equity:  #7FA9F0;
+    --goal:    #B9C6D6;
+    --warn:    #E2695C;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 6px;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 13.5px;
+    margin: 0;
+  }
+
+  .headline {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 36px;
+    align-items: baseline;
+  }
+
+  .headline-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .headline-value {
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  .headline-value.asset  { color: var(--asset); }
+  .headline-value.equity { color: var(--equity); }
+  .headline-value.none   { color: var(--muted); font-size: 22px; }
+
+  .headline-label {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  /* ---------- Layout ---------- */
+
+  .grid {
+    display: grid;
+    grid-template-columns: 268px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ---------- Controls ---------- */
+
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 4px 18px 18px;
+  }
+
+  .ctrl-group {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ctrl-group:last-child {
+    border-bottom: none;
+    padding-bottom: 4px;
+  }
+
+  .ctrl-group h2 {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 14px;
+    letter-spacing: 0.02em;
+  }
+
+  .field {
+    margin-bottom: 15px;
+  }
+
+  .field:last-child {
+    margin-bottom: 0;
+  }
+
+  .field-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+  }
+
+  .field-head label {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .field-head .val {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--asset);
+    font-weight: 600;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 20px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 3px;
+    background: var(--line-2);
+    border-radius: 2px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--asset);
+    margin-top: -5.5px;
+    border: none;
+  }
+
+  input[type="range"]::-moz-range-track {
+    height: 3px;
+    background: var(--line-2);
+    border-radius: 2px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--asset);
+    border: none;
+  }
+
+  input[type="range"]:focus-visible {
+    outline: 2px solid var(--equity);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: 3px;
+    color: var(--text);
+    padding: 6px 9px;
+    font-size: 13.5px;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="number"]:focus-visible {
+    outline: 2px solid var(--equity);
+    outline-offset: 1px;
+  }
+
+  .toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+
+  .toggle input {
+    margin: 4px 0 0;
+    accent-color: var(--debt);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+  }
+
+  .toggle span {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .toggle small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  button.reset {
+    width: 100%;
+    margin-top: 14px;
+    background: transparent;
+    border: 1px solid var(--line-2);
+    color: var(--muted);
+    border-radius: 3px;
+    padding: 7px;
+    font-family: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+
+  button.reset:hover {
+    color: var(--text);
+    border-color: var(--text);
+  }
+
+  /* ---------- Chart ---------- */
+
+  .chart-panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 20px 14px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .legend i {
+    display: inline-block;
+    width: 16px;
+    height: 2.5px;
+    vertical-align: middle;
+    margin-right: 7px;
+    border-radius: 2px;
+  }
+
+  .chart-holder {
+    position: relative;
+    width: 100%;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: #0A1017;
+    border: 1px solid var(--line-2);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 5;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+
+  .tooltip.on {
+    opacity: 1;
+  }
+
+  .tooltip .tt-year {
+    font-weight: 600;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tooltip .tt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tooltip .tt-row span:first-child {
+    color: var(--muted);
+  }
+
+  /* ---------- Stats ---------- */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-top: 22px;
+    overflow: hidden;
+  }
+
+  .stat {
+    background: var(--panel);
+    padding: 14px 16px;
+  }
+
+  .stat .k {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .stat .v {
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat .v.warn { color: var(--warn); }
+
+  /* ---------- Table ---------- */
+
+  details {
+    margin-top: 22px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+
+  summary {
+    padding: 13px 18px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--muted);
+    user-select: none;
+  }
+
+  summary:hover { color: var(--text); }
+
+  .table-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    border-top: 1px solid var(--line);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--panel-2);
+    color: var(--muted);
+    font-weight: 500;
+    text-align: right;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  thead th:first-child,
+  tbody td:first-child {
+    text-align: left;
+  }
+
+  tbody td {
+    padding: 7px 14px;
+    text-align: right;
+    border-bottom: 1px solid rgba(36,49,63,0.55);
+    white-space: nowrap;
+  }
+
+  tbody tr.phase-edge td {
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  tbody tr:hover td {
+    background: var(--panel-2);
+  }
+
+  td.neg { color: var(--warn); }
+
+  .note {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.85;
+  }
+
+  .note strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  @media (max-width: 880px) {
+    .grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .wrap { padding: 24px 16px 48px; }
+    .headline { gap: 24px; }
+    .headline-value { font-size: 25px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>資產負債三十年推演</h1>
+    <p class="sub">起始 2026 年。負債含 A 820萬／B 570萬（各兩年寬限）／C 1,000萬，可加計 D 1,000萬試算。</p>
+
+    <div class="headline">
+      <div class="headline-item">
+        <div class="headline-value asset" id="hlAsset">—</div>
+        <div class="headline-label">總資產跨越一億</div>
+      </div>
+      <div class="headline-item">
+        <div class="headline-value equity" id="hlEquity">—</div>
+        <div class="headline-label">淨值跨越一億</div>
+      </div>
+      <div class="headline-item">
+        <div class="headline-value" id="hlDebtFree" style="color:var(--debt)">—</div>
+        <div class="headline-label">負債清償完畢</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="banner" style="display:none;background:rgba(226,105,92,0.12);border:1px solid var(--warn);
+       border-radius:4px;padding:11px 16px;margin-bottom:22px;color:var(--warn);font-size:13.5px;"></div>
+
+  <div class="grid">
+
+    <!-- ============ 控制面板 ============ -->
+    <div class="controls">
+
+      <div class="ctrl-group">
+        <h2>報酬假設</h2>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="ret">年化總報酬率</label>
+            <span class="val" id="retVal">6.0%</span>
+          </div>
+          <input type="range" id="ret" min="0" max="12" step="0.1" value="6">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="div">稅後股息率</label>
+            <span class="val" id="divVal">2.04%</span>
+          </div>
+          <input type="range" id="div" min="0" max="5" step="0.02" value="2.04">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="inf">通膨率</label>
+            <span class="val" id="infVal">2.0%</span>
+          </div>
+          <input type="range" id="inf" min="0" max="5" step="0.1" value="2">
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h2>收支</h2>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="start">起始總資產（萬）</label>
+          </div>
+          <input type="number" id="start" value="4910" step="10">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="salary">年薪資（萬）</label>
+          </div>
+          <input type="number" id="salary" value="100" step="5">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="living">年生活支出（萬）</label>
+          </div>
+          <input type="number" id="living" value="108" step="5">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="stopYear">停止薪資收入</label>
+            <span class="val" id="stopYearVal">持續有薪資</span>
+          </div>
+          <input type="range" id="stopYear" min="1" max="31" step="1" value="31">
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h2>情境</h2>
+
+        <label class="toggle">
+          <input type="checkbox" id="useD">
+          <span>加計 D 貸款
+            <small>1,000萬 · 2.3% · 30年 · 全額投入</small>
+          </span>
+        </label>
+
+        <label class="toggle">
+          <input type="checkbox" id="extendB">
+          <span>B 展延為 30 年
+            <small>18年攤還改為 28年</small>
+          </span>
+        </label>
+
+        <label class="toggle">
+          <input type="checkbox" id="rateShock">
+          <span>房貸利率 +1%
+            <small>A、B、D 升至 3.3%，C 升至 4.15%</small>
+          </span>
+        </label>
+
+        <button class="reset" id="resetBtn">回到預設值</button>
+      </div>
+    </div>
+
+    <!-- ============ 圖表 ============ -->
+    <div>
+      <div class="chart-panel">
+        <div class="legend">
+          <span><i style="background:var(--asset)"></i>總資產</span>
+          <span><i style="background:var(--debt)"></i>總負債</span>
+          <span><i style="background:var(--equity)"></i>淨值</span>
+          <span><i style="background:var(--goal);opacity:.7"></i>一億目標線</span>
+        </div>
+        <div class="chart-holder" id="chartHolder">
+          <svg id="chart" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"
+               role="img" aria-label="資產、負債與淨值的三十年推移曲線"></svg>
+          <div class="tooltip" id="tooltip"></div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="k">30 年後總資產</div>
+          <div class="v" id="stAsset">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">30 年後淨值</div>
+          <div class="v" id="stEquity">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">最高年提領率</div>
+          <div class="v" id="stWithdraw">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">最低 LTV 年份／最高 LTV</div>
+          <div class="v" id="stLtv">—</div>
+        </div>
+      </div>
+
+      <details>
+        <summary>展開逐年明細</summary>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>年度</th>
+                <th>總資產</th>
+                <th>總負債</th>
+                <th>淨值</th>
+                <th>年還款</th>
+                <th>股息</th>
+                <th>淨賣出</th>
+                <th>提領率</th>
+                <th>LTV</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>模型說明。</strong>
+    資產以「價格成長率 = 年化總報酬 − 股息率」複利成長，股息單獨以現金入帳。
+    每年現金流 = 薪資 + 股息 − 生活支出 − 年還款；不足額由部位賣出補足（表中「淨賣出」），
+    有結餘則加回部位。薪資與生活支出隨通膨逐年調整，還款金額為固定名目。<br>
+    A 為 820萬／2.3%／30年含2年寬限，B 為 570萬／2.3%／20年含2年寬限，
+    C 為 1,000萬／3.15%／30年無寬限（由月繳 4.3 萬反推利率）。
+    寬限期內僅繳息，期滿後以剩餘年期重新攤還。<br>
+    未納入：匯率變動、稅負變化、資產配置調整、緊急支出、房產價值。
+    模型為結構試算，非投資建議。
+  </div>
+
+</div>
+
+<script>
+// =====================================================================
+//  貸款攤還模型
+// =====================================================================
+
+/**
+ * 建立一筆貸款的逐月還款計畫。
+ * @param {number} principal   本金（單位：萬元）
+ * @param {number} annualRate  年利率（小數，例如 0.023）
+ * @param {number} totalYears  總年期（含寬限期）
+ * @param {number} graceYears  寬限期年數（只繳息）
+ * @returns {{payments:number[], balances:number[]}}
+ *          payments[y] = 第 y+1 年的總還款額（萬元）
+ *          balances[y] = 第 y+1 年年底的剩餘本金（萬元）
+ */
+function buildLoanSchedule(principal, annualRate, totalYears, graceYears) {
+  var monthlyRate    = annualRate / 12;
+  var graceMonths    = graceYears * 12;
+  var amortMonths    = (totalYears - graceYears) * 12;
+  var totalMonths    = totalYears * 12;
+
+  // 寬限期滿後的月付金（本息平均攤還）
+  var amortPayment;
+  if (monthlyRate === 0) {
+    amortPayment = principal / amortMonths;
+  } else {
+    var growth   = Math.pow(1 + monthlyRate, amortMonths);
+    amortPayment = principal * monthlyRate * growth / (growth - 1);
+  }
+
+  var balance  = principal;
+  var payments = [];
+  var balances = [];
+
+  for (var year = 0; year < 30; year++) {
+    var yearPayment = 0;
+
+    for (var m = 0; m < 12; m++) {
+      var monthIndex = year * 12 + m;
+
+      if (monthIndex >= totalMonths || balance <= 0.0000001) {
+        continue;
+      }
+
+      var interest = balance * monthlyRate;
+
+      if (monthIndex < graceMonths) {
+        // 寬限期：只繳息，本金不動
+        yearPayment += interest;
+      } else {
+        var principalPart = amortPayment - interest;
+        if (principalPart > balance) {
+          principalPart = balance;
+          yearPayment  += balance + interest;
+        } else {
+          yearPayment  += amortPayment;
+        }
+        balance -= principalPart;
+        if (balance < 0.0000001) {
+          balance = 0;
+        }
+      }
+    }
+
+    payments.push(yearPayment);
+    balances.push(balance);
+  }
+
+  return { payments: payments, balances: balances };
+}
+
+// =====================================================================
+//  情境模擬
+// =====================================================================
+
+function runProjection(input) {
+  var rateBump = input.rateShock ? 0.01 : 0;
+
+  var loanA = buildLoanSchedule(820,  0.023 + rateBump, 30, 2);
+  var loanB = buildLoanSchedule(570,  0.023 + rateBump, input.extendB ? 30 : 20, 2);
+  var loanC = buildLoanSchedule(1000, 0.0315 + rateBump, 30, 0);
+  var loanD = input.useD
+      ? buildLoanSchedule(1000, 0.023 + rateBump, 30, 0)
+      : { payments: new Array(30).fill(0), balances: new Array(30).fill(0) };
+
+  var priceGrowth = (input.totalReturn - input.dividendYield) / 100;
+  var inflation   = input.inflation / 100;
+  var divRate     = input.dividendYield / 100;
+
+  var assets = input.startAssets + (input.useD ? 1000 : 0);
+  var rows   = [];
+
+  for (var year = 0; year < 30; year++) {
+    var debt = loanA.balances[year] + loanB.balances[year]
+             + loanC.balances[year] + loanD.balances[year];
+
+    var debtPayment = loanA.payments[year] + loanB.payments[year]
+                    + loanC.payments[year] + loanD.payments[year];
+
+    var inflationFactor = Math.pow(1 + inflation, year);
+    var hasSalary       = (year + 1) < input.stopYear;
+    var salary          = hasSalary ? input.salary * inflationFactor : 0;
+    var living          = input.living * inflationFactor;
+
+    var dividend  = assets * divRate;
+    var netSell   = living + debtPayment - salary - dividend;
+    var withdrawRate = assets > 0 ? (netSell / assets) * 100 : 0;
+
+    rows.push({
+      year:         2026 + year,
+      yearIndex:    year + 1,
+      assets:       assets,
+      debt:         debt,
+      equity:       assets - debt,
+      debtPayment:  debtPayment,
+      dividend:     dividend,
+      netSell:      netSell,
+      withdrawRate: withdrawRate,
+      ltv:          assets > 0 ? (debt / assets) * 100 : 0
+    });
+
+    // 年底結算：價格成長後扣除淨賣出（若為負代表有結餘可加碼）
+    assets = assets * (1 + priceGrowth) - netSell;
+    if (assets < 0) {
+      assets = 0;
+    }
+  }
+
+  return rows;
+}
+
+// =====================================================================
+//  圖表繪製
+// =====================================================================
+
+var PAD = { top: 22, right: 22, bottom: 40, left: 62 };
+var W = 900;
+var H = 460;
+var GOAL = 10000; // 一億 = 10,000 萬
+
+function buildPath(rows, key, xOf, yOf) {
+  var d = "";
+  for (var i = 0; i < rows.length; i++) {
+    d += (i === 0 ? "M" : "L") + xOf(i).toFixed(2) + " " + yOf(rows[i][key]).toFixed(2);
+  }
+  return d;
+}
+
+function drawChart(rows, stopYear) {
+  var svg = document.getElementById("chart");
+
+  var maxValue = GOAL * 1.05;
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].assets > maxValue) { maxValue = rows[i].assets; }
+  }
+  var minValue = 0;
+  for (var j = 0; j < rows.length; j++) {
+    if (rows[j].equity < minValue) { minValue = rows[j].equity; }
+  }
+
+  var top = Math.ceil(maxValue / 2000) * 2000;
+  var bottom = Math.floor(minValue / 2000) * 2000;
+
+  var plotW = W - PAD.left - PAD.right;
+  var plotH = H - PAD.top - PAD.bottom;
+
+  var xOf = function (i) {
+    return PAD.left + (i / (rows.length - 1)) * plotW;
+  };
+  var yOf = function (v) {
+    return PAD.top + plotH - ((v - bottom) / (top - bottom)) * plotH;
+  };
+
+  var parts = [];
+
+  // 水平網格與 Y 軸刻度
+  for (var g = bottom; g <= top; g += 2000) {
+    var gy = yOf(g).toFixed(2);
+    parts.push('<line x1="' + PAD.left + '" y1="' + gy + '" x2="' + (W - PAD.right) +
+               '" y2="' + gy + '" stroke="var(--line)" stroke-width="1"/>');
+    parts.push('<text x="' + (PAD.left - 10) + '" y="' + (parseFloat(gy) + 4) +
+               '" fill="var(--muted)" font-size="11.5" text-anchor="end">' +
+               (g / 10000).toFixed(1) + '億</text>');
+  }
+
+  // 零軸強化
+  if (bottom < 0) {
+    parts.push('<line x1="' + PAD.left + '" y1="' + yOf(0).toFixed(2) + '" x2="' + (W - PAD.right) +
+               '" y2="' + yOf(0).toFixed(2) + '" stroke="var(--line-2)" stroke-width="1.5"/>');
+  }
+
+  // X 軸年份
+  for (var t = 0; t < rows.length; t += 5) {
+    parts.push('<text x="' + xOf(t).toFixed(2) + '" y="' + (H - PAD.bottom + 22) +
+               '" fill="var(--muted)" font-size="11.5" text-anchor="middle">' +
+               rows[t].year + '</text>');
+  }
+  parts.push('<text x="' + xOf(rows.length - 1).toFixed(2) + '" y="' + (H - PAD.bottom + 22) +
+             '" fill="var(--muted)" font-size="11.5" text-anchor="middle">' +
+             rows[rows.length - 1].year + '</text>');
+
+  // 一億目標線
+  parts.push('<line x1="' + PAD.left + '" y1="' + yOf(GOAL).toFixed(2) + '" x2="' + (W - PAD.right) +
+             '" y2="' + yOf(GOAL).toFixed(2) +
+             '" stroke="var(--goal)" stroke-width="1.2" stroke-dasharray="5 5" opacity="0.75"/>');
+  parts.push('<text x="' + (W - PAD.right) + '" y="' + (yOf(GOAL) - 8).toFixed(2) +
+             '" fill="var(--goal)" font-size="11.5" text-anchor="end" opacity="0.85">一億</text>');
+
+  // 資產填色區
+  var areaPath = buildPath(rows, "assets", xOf, yOf) +
+                 "L" + xOf(rows.length - 1).toFixed(2) + " " + yOf(bottom).toFixed(2) +
+                 "L" + xOf(0).toFixed(2) + " " + yOf(bottom).toFixed(2) + "Z";
+  parts.push('<path d="' + areaPath + '" fill="var(--asset)" opacity="0.07"/>');
+
+  // 三條主線
+  parts.push('<path d="' + buildPath(rows, "assets", xOf, yOf) +
+             '" fill="none" stroke="var(--asset)" stroke-width="2.4" stroke-linejoin="round"/>');
+  parts.push('<path d="' + buildPath(rows, "equity", xOf, yOf) +
+             '" fill="none" stroke="var(--equity)" stroke-width="2.2" stroke-linejoin="round"/>');
+  parts.push('<path d="' + buildPath(rows, "debt", xOf, yOf) +
+             '" fill="none" stroke="var(--debt)" stroke-width="2.2" stroke-linejoin="round"/>');
+
+  // 跨越一億的標記
+  var assetCross  = findCrossing(rows, "assets");
+  var equityCross = findCrossing(rows, "equity");
+
+  if (assetCross >= 0) {
+    parts.push('<circle cx="' + xOf(assetCross).toFixed(2) + '" cy="' + yOf(rows[assetCross].assets).toFixed(2) +
+               '" r="5" fill="var(--bg)" stroke="var(--asset)" stroke-width="2.4"/>');
+  }
+  if (equityCross >= 0) {
+    parts.push('<circle cx="' + xOf(equityCross).toFixed(2) + '" cy="' + yOf(rows[equityCross].equity).toFixed(2) +
+               '" r="5" fill="var(--bg)" stroke="var(--equity)" stroke-width="2.4"/>');
+  }
+
+  // 寬限期結束標記（第 3 年起還款跳升）
+  parts.push('<line x1="' + xOf(2).toFixed(2) + '" y1="' + PAD.top + '" x2="' + xOf(2).toFixed(2) +
+             '" y2="' + (H - PAD.bottom) + '" stroke="var(--line-2)" stroke-width="1" stroke-dasharray="3 4"/>');
+  parts.push('<text x="' + (xOf(2) + 7).toFixed(2) + '" y="' + (PAD.top + 12) +
+             '" fill="var(--muted)" font-size="11">寬限期滿</text>');
+
+  // 停止薪資收入的標記
+  if (stopYear <= 30) {
+    var sx = xOf(stopYear - 1).toFixed(2);
+    parts.push('<line x1="' + sx + '" y1="' + PAD.top + '" x2="' + sx +
+               '" y2="' + (H - PAD.bottom) + '" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8"/>');
+    parts.push('<text x="' + (parseFloat(sx) + 7) + '" y="' + (PAD.top + 28) +
+               '" fill="var(--warn)" font-size="11">薪資中止</text>');
+  }
+
+  // 互動用的游標層
+  parts.push('<line id="cursorLine" x1="0" y1="' + PAD.top + '" x2="0" y2="' + (H - PAD.bottom) +
+             '" stroke="var(--text)" stroke-width="1" opacity="0"/>');
+  parts.push('<circle id="dotAsset"  r="4" fill="var(--asset)"  opacity="0"/>');
+  parts.push('<circle id="dotEquity" r="4" fill="var(--equity)" opacity="0"/>');
+  parts.push('<circle id="dotDebt"   r="4" fill="var(--debt)"   opacity="0"/>');
+  parts.push('<rect id="hitArea" x="' + PAD.left + '" y="' + PAD.top + '" width="' + plotW +
+             '" height="' + plotH + '" fill="transparent"/>');
+
+  svg.innerHTML = parts.join("");
+
+  return { xOf: xOf, yOf: yOf, plotW: plotW };
+}
+
+function findCrossing(rows, key) {
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i][key] >= GOAL) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// =====================================================================
+//  數字格式
+// =====================================================================
+
+function fmtWan(v) {
+  return Math.round(v).toLocaleString("en-US");
+}
+
+function fmtYi(v) {
+  return (v / 10000).toFixed(2) + " 億";
+}
+
+// =====================================================================
+//  主流程
+// =====================================================================
+
+var DEFAULTS = {
+  ret: 6, div: 2.04, inf: 2,
+  start: 4910, salary: 100, living: 108, stopYear: 31,
+  useD: false, extendB: false, rateShock: false
+};
+
+var chartGeometry = null;
+var currentRows   = [];
+
+function readInputs() {
+  return {
+    totalReturn:    parseFloat(document.getElementById("ret").value),
+    dividendYield:  parseFloat(document.getElementById("div").value),
+    inflation:      parseFloat(document.getElementById("inf").value),
+    startAssets:    parseFloat(document.getElementById("start").value)  || 0,
+    salary:         parseFloat(document.getElementById("salary").value) || 0,
+    living:         parseFloat(document.getElementById("living").value) || 0,
+    stopYear:       parseInt(document.getElementById("stopYear").value, 10),
+    useD:           document.getElementById("useD").checked,
+    extendB:        document.getElementById("extendB").checked,
+    rateShock:      document.getElementById("rateShock").checked
+  };
+}
+
+function update() {
+  var input = readInputs();
+
+  document.getElementById("retVal").textContent = input.totalReturn.toFixed(1) + "%";
+  document.getElementById("divVal").textContent = input.dividendYield.toFixed(2) + "%";
+  document.getElementById("infVal").textContent = input.inflation.toFixed(1) + "%";
+
+  var stopLabel = document.getElementById("stopYearVal");
+  if (input.stopYear > 30) {
+    stopLabel.textContent = "持續有薪資";
+    stopLabel.style.color = "var(--asset)";
+  } else {
+    stopLabel.textContent = (2025 + input.stopYear) + "　第 " + input.stopYear + " 年起";
+    stopLabel.style.color = "var(--warn)";
+  }
+
+  var rows = runProjection(input);
+  currentRows = rows;
+  chartGeometry = drawChart(rows, input.stopYear);
+
+  // ---- 資產耗盡警示 ----
+  var depletedIndex = -1;
+  for (var d = 0; d < rows.length; d++) {
+    if (rows[d].assets <= 0.5) { depletedIndex = d; break; }
+  }
+  var banner = document.getElementById("banner");
+  if (depletedIndex >= 0) {
+    banner.style.display = "block";
+    banner.textContent = "資產於 " + rows[depletedIndex].year + "（第 " +
+                         rows[depletedIndex].yearIndex + " 年）耗盡，此情境無法支撐至還款結束。";
+  } else {
+    banner.style.display = "none";
+  }
+
+  // ---- 標題數字 ----
+  var assetCross  = findCrossing(rows, "assets");
+  var equityCross = findCrossing(rows, "equity");
+
+  var hlAsset = document.getElementById("hlAsset");
+  if (assetCross >= 0) {
+    hlAsset.className = "headline-value asset";
+    hlAsset.textContent = rows[assetCross].year + "　第 " + rows[assetCross].yearIndex + " 年";
+  } else {
+    hlAsset.className = "headline-value none";
+    hlAsset.textContent = "30 年內未達成";
+  }
+
+  var hlEquity = document.getElementById("hlEquity");
+  if (equityCross >= 0) {
+    hlEquity.className = "headline-value equity";
+    hlEquity.textContent = rows[equityCross].year + "　第 " + rows[equityCross].yearIndex + " 年";
+  } else {
+    hlEquity.className = "headline-value none";
+    hlEquity.textContent = "30 年內未達成";
+  }
+
+  var debtFreeIndex = -1;
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].debt < 1) { debtFreeIndex = i; break; }
+  }
+  var hlDebtFree = document.getElementById("hlDebtFree");
+  hlDebtFree.style.fontSize = "30px";
+  hlDebtFree.textContent = debtFreeIndex >= 0
+      ? rows[debtFreeIndex].year + "　第 " + rows[debtFreeIndex].yearIndex + " 年"
+      : rows[29].year + " 後";
+
+  // ---- 統計 ----
+  var last = rows[rows.length - 1];
+  var finalAssets = last.assets * (1 + (input.totalReturn - input.dividendYield) / 100) - last.netSell;
+
+  var finalDebt = last.debt;
+
+  document.getElementById("stAsset").textContent  = fmtYi(finalAssets);
+  document.getElementById("stEquity").textContent = fmtYi(finalAssets - finalDebt);
+
+  var maxWithdraw = 0, maxLtv = 0, maxLtvYear = rows[0].year;
+  for (var k = 0; k < rows.length; k++) {
+    if (rows[k].withdrawRate > maxWithdraw) { maxWithdraw = rows[k].withdrawRate; }
+    if (rows[k].ltv > maxLtv) { maxLtv = rows[k].ltv; maxLtvYear = rows[k].year; }
+  }
+
+  var stW = document.getElementById("stWithdraw");
+  stW.textContent = maxWithdraw.toFixed(2) + "%";
+  stW.className = maxWithdraw > 4 ? "v warn" : "v";
+
+  document.getElementById("stLtv").textContent = maxLtvYear + "　" + maxLtv.toFixed(1) + "%";
+
+  // ---- 表格 ----
+  var html = "";
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    var edge = (r === 1) ? " class=\"phase-edge\"" : "";
+    html += "<tr" + edge + ">"
+          + "<td>" + row.year + "</td>"
+          + "<td>" + fmtWan(row.assets) + "</td>"
+          + "<td>" + fmtWan(row.debt) + "</td>"
+          + "<td>" + fmtWan(row.equity) + "</td>"
+          + "<td>" + fmtWan(row.debtPayment) + "</td>"
+          + "<td>" + fmtWan(row.dividend) + "</td>"
+          + "<td" + (row.netSell > 0 ? " class=\"neg\"" : "") + ">" + fmtWan(row.netSell) + "</td>"
+          + "<td" + (row.withdrawRate > 4 ? " class=\"neg\"" : "") + ">" + row.withdrawRate.toFixed(2) + "%</td>"
+          + "<td>" + row.ltv.toFixed(1) + "%</td>"
+          + "</tr>";
+  }
+  document.getElementById("tbody").innerHTML = html;
+}
+
+// =====================================================================
+//  游標互動
+// =====================================================================
+
+function setupHover() {
+  var holder  = document.getElementById("chartHolder");
+  var tooltip = document.getElementById("tooltip");
+
+  holder.addEventListener("mousemove", function (event) {
+    if (!chartGeometry || currentRows.length === 0) { return; }
+
+    var svg  = document.getElementById("chart");
+    var rect = svg.getBoundingClientRect();
+    var scale = rect.width / W;
+
+    var svgX = (event.clientX - rect.left) / scale;
+    var ratio = (svgX - PAD.left) / chartGeometry.plotW;
+
+    if (ratio < -0.02 || ratio > 1.02) {
+      hideHover();
+      return;
+    }
+
+    var index = Math.round(ratio * (currentRows.length - 1));
+    if (index < 0) { index = 0; }
+    if (index > currentRows.length - 1) { index = currentRows.length - 1; }
+
+    var row = currentRows[index];
+    var px  = chartGeometry.xOf(index);
+
+    var cursorLine = document.getElementById("cursorLine");
+    cursorLine.setAttribute("x1", px);
+    cursorLine.setAttribute("x2", px);
+    cursorLine.setAttribute("opacity", "0.25");
+
+    positionDot("dotAsset",  px, chartGeometry.yOf(row.assets));
+    positionDot("dotEquity", px, chartGeometry.yOf(row.equity));
+    positionDot("dotDebt",   px, chartGeometry.yOf(row.debt));
+
+    tooltip.innerHTML =
+        '<div class="tt-year">' + row.year + '　第 ' + row.yearIndex + ' 年</div>'
+      + '<div class="tt-row"><span>總資產</span><span style="color:var(--asset)">' + fmtWan(row.assets) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>總負債</span><span style="color:var(--debt)">' + fmtWan(row.debt) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>淨值</span><span style="color:var(--equity)">' + fmtWan(row.equity) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>年還款</span><span>' + fmtWan(row.debtPayment) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>淨賣出</span><span>' + fmtWan(row.netSell) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>提領率</span><span>' + row.withdrawRate.toFixed(2) + '%</span></div>'
+      + '<div class="tt-row"><span>LTV</span><span>' + row.ltv.toFixed(1) + '%</span></div>';
+
+    tooltip.classList.add("on");
+
+    var holderRect = holder.getBoundingClientRect();
+    var left = px * scale + 18;
+    if (left + 210 > holderRect.width) {
+      left = px * scale - 210;
+    }
+    tooltip.style.left = Math.max(4, left) + "px";
+    tooltip.style.top  = "28px";
+  });
+
+  holder.addEventListener("mouseleave", hideHover);
+}
+
+function positionDot(id, x, y) {
+  var dot = document.getElementById(id);
+  if (!dot) { return; }
+  dot.setAttribute("cx", x);
+  dot.setAttribute("cy", y);
+  dot.setAttribute("opacity", "1");
+}
+
+function hideHover() {
+  document.getElementById("tooltip").classList.remove("on");
+  var ids = ["cursorLine", "dotAsset", "dotEquity", "dotDebt"];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) { el.setAttribute("opacity", "0"); }
+  }
+}
+
+// =====================================================================
+//  綁定
+// =====================================================================
+
+var controlIds = ["ret", "div", "inf", "start", "salary", "living", "stopYear", "useD", "extendB", "rateShock"];
+
+for (var c = 0; c < controlIds.length; c++) {
+  document.getElementById(controlIds[c]).addEventListener("input", update);
+  document.getElementById(controlIds[c]).addEventListener("change", update);
+}
+
+document.getElementById("resetBtn").addEventListener("click", function () {
+  document.getElementById("ret").value       = DEFAULTS.ret;
+  document.getElementById("div").value       = DEFAULTS.div;
+  document.getElementById("inf").value       = DEFAULTS.inf;
+  document.getElementById("start").value     = DEFAULTS.start;
+  document.getElementById("salary").value    = DEFAULTS.salary;
+  document.getElementById("living").value    = DEFAULTS.living;
+  document.getElementById("stopYear").value  = DEFAULTS.stopYear;
+  document.getElementById("useD").checked      = DEFAULTS.useD;
+  document.getElementById("extendB").checked   = DEFAULTS.extendB;
+  document.getElementById("rateShock").checked = DEFAULTS.rateShock;
+  update();
+});
+
+setupHover();
+update();
+
+window.addEventListener("resize", function () {
+  hideHover();
+});
+</script>
+</body>
+</html>
