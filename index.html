@@ -127,6 +127,7 @@
   input:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .mini-label { font-size: 11.5px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .hint { font-size: 11px; color: var(--muted); display: block; margin-top: 4px; line-height: 1.5; opacity: 0.85; }
 
   .toggle { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 2px 0 10px; }
   .toggle input { margin: 4px 0 0; accent-color: var(--debt); width: 15px; height: 15px; cursor: pointer; }
@@ -286,7 +287,7 @@
 
   <header>
     <h1>資產負債推演</h1>
-    <p class="sub">主指標為總提取率＝（生活支出 ＋ 債務攤還 − 年收入）÷ 總資產。股息包含在提取之內，不另計為收入。</p>
+    <p class="sub">主指標為總提取率＝（生活支出 ＋ 債務攤還 − 持續性收入 − 薪資收入）÷ 金融資產。股息包含在提取之內，不另計為收入。</p>
 
     <div class="headline">
       <div class="headline-item">
@@ -295,7 +296,7 @@
       </div>
       <div class="headline-item">
         <div class="headline-value" id="hlAsset" style="color:var(--asset)">—</div>
-        <div class="headline-label">總資產跨越一億</div>
+        <div class="headline-label">金融資產跨越一億</div>
       </div>
       <div class="headline-item">
         <div class="headline-value" id="hlEquity" style="color:var(--equity)">—</div>
@@ -303,7 +304,7 @@
       </div>
       <div class="headline-item">
         <div class="headline-value small" id="hlSafeStop" style="color:var(--goal)">—</div>
-        <div class="headline-label">可安全停止收入（≤ 3.5%）</div>
+        <div class="headline-label">可安全停薪（≤ 3.5%）</div>
       </div>
     </div>
   </header>
@@ -347,25 +348,32 @@
         <h2>資產與收支</h2>
 
         <div class="field">
-          <span class="mini-label">起始總資產（萬）</span>
+          <span class="mini-label">起始金融資產（萬）</span>
           <input type="number" id="startAssets" value="1500" step="50" min="0">
+          <span class="hint">股票、債券、現金等可變現部位；不含自住房屋等不動產</span>
+        </div>
+
+        <div class="field">
+          <span class="mini-label">年生活支出（萬）</span>
+          <input type="number" id="living" value="108" step="5" min="0">
         </div>
 
         <div class="row2">
           <div class="field">
-            <span class="mini-label">年收入（萬）</span>
-            <input type="number" id="income" value="100" step="5" min="0">
+            <span class="mini-label">持續性收入（萬／年）</span>
+            <input type="number" id="passiveIncome" value="0" step="5" min="0">
           </div>
           <div class="field">
-            <span class="mini-label">年生活支出（萬）</span>
-            <input type="number" id="living" value="108" step="5" min="0">
+            <span class="mini-label">薪資收入（萬／年）</span>
+            <input type="number" id="salaryIncome" value="100" step="5" min="0">
           </div>
         </div>
+        <span class="hint">持續性收入如房租、年金，全期都有；薪資收入可設定中止年度</span>
 
-        <div class="field">
+        <div class="field" style="margin-top:12px;">
           <div class="field-head">
-            <label for="stopYear">停止年收入</label>
-            <span class="val" id="stopYearVal">持續有收入</span>
+            <label for="stopYear">停止薪資收入</label>
+            <span class="val" id="stopYearVal">持續有薪資</span>
           </div>
           <input type="range" id="stopYear" min="1" max="41" step="1" value="41">
         </div>
@@ -448,9 +456,9 @@
       </div>
 
       <div class="chart-panel">
-        <p class="panel-title">資產、負債與淨值</p>
+        <p class="panel-title">金融資產、負債與淨值</p>
         <div class="legend">
-          <span><i style="background:var(--asset)"></i>總資產</span>
+          <span><i style="background:var(--asset)"></i>金融資產</span>
           <span><i style="background:var(--debt)"></i>總負債</span>
           <span><i style="background:var(--equity)"></i>淨值</span>
           <span><i style="background:var(--goal);opacity:.7"></i>一億目標線</span>
@@ -475,7 +483,7 @@
           <table>
             <thead>
               <tr>
-                <th>年度</th><th>總資產</th><th>總負債</th><th>淨值</th>
+                <th>年度</th><th>金融資產</th><th>總負債</th><th>淨值</th>
                 <th>年還款</th><th>總提取</th><th>股息支應</th><th>需賣出</th>
                 <th>總提取率</th><th>LTV</th>
               </tr>
@@ -499,13 +507,15 @@
     <strong>貸款模型。</strong>
     寬限期內僅繳息、本金不動，期滿後以剩餘年期本息平均攤還。
     計劃借款於撥款年度全額投入部位，同年開始計息還款。
-    年收入與生活支出隨通膨調整，還款為固定名目。
+    持續性收入、薪資收入與生活支出皆隨通膨調整，還款為固定名目。
+    持續性收入（房租、年金等）全期存在，薪資收入可設定中止年度。
     推演年數自動延伸至最後一筆貸款清償為止（上限 40 年）。<br>
     <strong>參數儲存。</strong>
     所有欄位含負債清單會寫入瀏覽器 cookie，有效期一年，僅存在本機。
     若以沙箱環境開啟，瀏覽器可能拒絕寫入，此時參數僅在本次工作階段有效。<br>
     <strong>未納入。</strong>
-    匯率變動、稅制變化、資產配置調整、緊急支出、房產價值、報酬順序風險。
+    匯率變動、稅制變化、資產配置調整、緊急支出、報酬順序風險。
+    自住房屋等不動產不列入金融資產，其貸款則應列入負債清單。
     模型為結構試算，非投資建議。
   </div>
 
@@ -869,8 +879,10 @@ function runProjection(input) {
     }
 
     var factor    = Math.pow(1 + inflation, year);
-    var hasIncome = (year + 1) < input.stopYear;
-    var income    = hasIncome ? input.income * factor : 0;
+    var hasSalary = (year + 1) < input.stopYear;
+    var passive   = input.passiveIncome * factor;
+    var salary    = hasSalary ? input.salaryIncome * factor : 0;
+    var income    = passive + salary;
     var living    = input.living * factor;
 
     var grossDraw = living + debtPayment - income;
@@ -890,7 +902,10 @@ function runProjection(input) {
       dividend:         dividend,
       mustSell:         mustSell,
       drawRate:         drawRate,
-      drawRateNoIncome: assets > 0 ? ((living + debtPayment) / assets) * 100 : 0,
+      income:           income,
+      passive:          passive,
+      salary:           salary,
+      drawRateNoSalary: assets > 0 ? ((living + debtPayment - passive) / assets) * 100 : 0,
       ltv:              assets > 0 ? (debt / assets) * 100 : 0
     });
 
@@ -1115,7 +1130,7 @@ function drawChart(rows, input) {
     parts.push('<line x1="' + sx2 + '" y1="' + PAD.top + '" x2="' + sx2 + '" y2="' + (H - PAD.bottom) +
                '" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8"/>');
     parts.push('<text x="' + (parseFloat(sx2) + 7) + '" y="' + (PAD.top + 28) +
-               '" fill="var(--warn)" font-size="11">收入中止</text>');
+               '" fill="var(--warn)" font-size="11">薪資中止</text>');
   }
 
   parts.push('<line id="cursorLine" x1="0" y1="' + PAD.top + '" x2="0" y2="' + (H - PAD.bottom) +
@@ -1149,12 +1164,12 @@ function fmtYi(v)  { return (v / 10000).toFixed(2) + " 億"; }
 
 var DEFAULTS = {
   ret: 6, div: 2.04, inf: 2,
-  startAssets: 1500, income: 100, living: 108, stopYear: 41,
+  startAssets: 1500, passiveIncome: 0, salaryIncome: 100, living: 108, stopYear: 41,
   useD: false, dStart: 1, dAmount: 1000, dRate: 2.3, dTerm: 30, dGrace: 0,
   rateShock: false
 };
 
-var FIELD_IDS = ["ret", "div", "inf", "startAssets", "income", "living", "stopYear",
+var FIELD_IDS = ["ret", "div", "inf", "startAssets", "passiveIncome", "salaryIncome", "living", "stopYear",
                  "useD", "dStart", "dAmount", "dRate", "dTerm", "dGrace", "rateShock"];
 
 var CHECKBOX_IDS = ["useD", "rateShock"];
@@ -1190,7 +1205,8 @@ function readInputs() {
     dividendYield: num("div", 2.04),
     inflation:     num("inf", 2),
     startAssets:   num("startAssets", 1500),
-    income:        num("income", 100),
+    passiveIncome: num("passiveIncome", 0),
+    salaryIncome:  num("salaryIncome", 100),
     living:        num("living", 108),
     stopYear:      int("stopYear", 41),
     useD:          document.getElementById("useD").checked,
@@ -1226,6 +1242,11 @@ function loadParams() {
   if (!raw) { return false; }
   try {
     var v = JSON.parse(raw);
+    // 相容舊版：單一 income 欄位轉為薪資收入
+    if (v.income !== undefined && v.salaryIncome === undefined) {
+      v.salaryIncome  = v.income;
+      v.passiveIncome = 0;
+    }
     applyValues(v);
     if (v.debts && v.debts.length) {
       debts = cloneDebts(v.debts);
@@ -1261,7 +1282,7 @@ function update() {
 
   var stopLabel = document.getElementById("stopYearVal");
   if (input.stopYear > horizon) {
-    stopLabel.textContent = "持續有收入";
+    stopLabel.textContent = "持續有薪資";
     stopLabel.style.color = "var(--asset)";
   } else {
     stopLabel.textContent = (BASE_YEAR + input.stopYear - 1) + " 起";
@@ -1314,7 +1335,7 @@ function update() {
 
   var safeStop = -1;
   for (var s = 0; s < rows.length; s++) {
-    if (rows[s].drawRateNoIncome <= SAFE) { safeStop = s; break; }
+    if (rows[s].drawRateNoSalary <= SAFE) { safeStop = s; break; }
   }
   var hlSafeStop = document.getElementById("hlSafeStop");
   if (safeStop >= 0) {
@@ -1426,10 +1447,11 @@ function setupHover() {
 
     tooltip.innerHTML =
         '<div class="tt-year">' + row.year + '　第 ' + row.yearIndex + ' 年</div>'
-      + '<div class="tt-row"><span>總資產</span><span style="color:var(--asset)">' + fmtWan(row.assets) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>金融資產</span><span style="color:var(--asset)">' + fmtWan(row.assets) + ' 萬</span></div>'
       + '<div class="tt-row"><span>總負債</span><span style="color:var(--debt)">' + fmtWan(row.debt) + ' 萬</span></div>'
       + '<div class="tt-row"><span>淨值</span><span style="color:var(--equity)">' + fmtWan(row.equity) + ' 萬</span></div>'
       + '<div class="tt-row"><span>年還款</span><span>' + fmtWan(row.debtPayment) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>收入合計</span><span>' + fmtWan(row.income) + ' 萬</span></div>'
       + '<div class="tt-row"><span>總提取</span><span>' + fmtWan(row.grossDraw) + ' 萬</span></div>'
       + '<div class="tt-row"><span>總提取率</span><span style="color:' + colorOf(classify(row.drawRate)) + '">' + row.drawRate.toFixed(2) + '%</span></div>'
       + '<div class="tt-row"><span>LTV</span><span>' + row.ltv.toFixed(1) + '%</span></div>';
