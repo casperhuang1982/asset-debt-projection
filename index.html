@@ -287,7 +287,7 @@
 
   <header>
     <h1>資產負債推演</h1>
-    <p class="sub">主指標為總提取率＝（生活支出 ＋ 債務攤還 − 持續性收入 − 薪資收入）÷ 金融資產。股息包含在提取之內，不另計為收入。</p>
+    <p class="sub">主指標為總提取率＝ max(股息, 生活支出 ＋ 債務攤還 − 持續性收入 − 薪資收入) ÷ 金融資產。股息是被動提領，無論是否需要都會離開部位。</p>
 
     <div class="headline">
       <div class="headline-item">
@@ -448,7 +448,7 @@
 
       <div class="chart-panel">
         <p class="panel-title">總提取率</p>
-        <p class="panel-note">綠帶 ≤ 3.5% 為舒適區，黃帶 3.5–4% 需要監控，紅線以上代表在賭報酬率。</p>
+        <p class="panel-note">實線為<b style="color:var(--asset)">總提取率</b>＝股息與現金需求取大者；虛線為<b style="color:var(--muted)">淨提取率</b>＝實際需賣出的部分。綠帶 ≤ 3.5% 舒適，黃帶 3.5–4% 需監控，紅線以上在賭報酬率。</p>
         <div class="chart-holder">
           <svg id="rateChart" viewBox="0 0 900 210" preserveAspectRatio="xMidYMid meet"
                role="img" aria-label="總提取率的逐年變化"></svg>
@@ -484,8 +484,8 @@
             <thead>
               <tr>
                 <th>年度</th><th>金融資產</th><th>總負債</th><th>淨值</th>
-                <th>年還款</th><th>總提取</th><th>股息支應</th><th>需賣出</th>
-                <th>總提取率</th><th>LTV</th>
+                <th>年還款</th><th>現金需求</th><th>股息</th><th>需賣出</th>
+                <th>再投入</th><th>總提取</th><th>總提取率</th><th>淨提取率</th><th>LTV</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -499,11 +499,14 @@
     <strong>多筆負債。</strong>
     每筆各自獨立攤還，年期與寬限期可不同，模型逐年加總各筆的還款與餘額。
     若忘記利率，在該筆的「由月繳反推」輸入月繳金額後按下按鈕，會以二分法解出年利率並自動填入。<br>
-    <strong>為什麼股息要算進提取。</strong>
-    配息當天股價除息，部位同步縮減，本質上是強制性的部分變現。
-    把股息視為「不算提取」會低估資金外流，也無法與 4% 法則對照。
-    資產以年化總報酬複利成長，全部現金需求一律計為提取；
-    表中「股息支應／需賣出」僅為總提取的內部拆分，不影響資產軌跡。<br>
+    <strong>股息是被動提領。</strong>
+    配息當天股價除息，部位同步縮減，且已被扣繳稅款——這是一筆你無法拒絕的變現。
+    因此總提取取「股息」與「現金需求」的大者：
+    現金需求高於股息時，股息全數用掉、差額賣出補足；
+    現金需求低於股息時，股息仍全額離開部位，多出的部分再投入。
+    這代表<b>總提取率永遠不會低於股息率</b>，圖上以藍色虛線標示這道地板。
+    淨提取率（灰色虛線）則是實際需要賣出的部分，兩線的落差就是股息的被動效果。
+    資產軌跡以現金需求扣除，因為再投入的部分並未真正離開。<br>
     <strong>貸款模型。</strong>
     寬限期內僅繳息、本金不動，期滿後以剩餘年期本息平均攤還。
     計劃借款於撥款年度全額投入部位，同年開始計息還款。
@@ -885,11 +888,21 @@ function runProjection(input) {
     var income    = passive + salary;
     var living    = input.living * factor;
 
-    var grossDraw = living + debtPayment - income;
-    var drawRate  = assets > 0 ? (grossDraw / assets) * 100 : 0;
+    // 現金需求：生活支出 + 還款 − 收入
+    var cashNeed = living + debtPayment - income;
 
+    // 股息為被動提領：無論是否需要，都會離開部位
     var dividend = assets * divRate;
-    var mustSell = grossDraw - dividend;
+
+    // 總提取 = 股息與現金需求取大者
+    //   現金需求 > 股息 → 股息全用掉，再賣出補足差額
+    //   現金需求 < 股息 → 股息仍全額離開部位，剩餘再投入
+    var grossDraw = Math.max(dividend, cashNeed);
+    var mustSell  = Math.max(0, cashNeed - dividend);
+    var surplus   = Math.max(0, dividend - cashNeed);
+
+    var drawRate = assets > 0 ? (grossDraw / assets) * 100 : 0;
+    var netRate  = assets > 0 ? (cashNeed  / assets) * 100 : 0;
 
     rows.push({
       year:             BASE_YEAR + year,
@@ -899,17 +912,22 @@ function runProjection(input) {
       equity:           assets - debt,
       debtPayment:      debtPayment,
       grossDraw:        grossDraw,
+      cashNeed:         cashNeed,
       dividend:         dividend,
       mustSell:         mustSell,
+      surplus:          surplus,
       drawRate:         drawRate,
+      netRate:          netRate,
       income:           income,
       passive:          passive,
       salary:           salary,
-      drawRateNoSalary: assets > 0 ? ((living + debtPayment - passive) / assets) * 100 : 0,
+      drawRateNoSalary: assets > 0
+          ? (Math.max(dividend, living + debtPayment - passive) / assets) * 100 : 0,
       ltv:              assets > 0 ? (debt / assets) * 100 : 0
     });
 
-    assets = assets * (1 + totalReturn) - grossDraw;
+    // 資產軌跡：股息盈餘會再投入，故以現金需求扣除
+    assets = assets * (1 + totalReturn) - cashNeed;
     if (assets < 0) { assets = 0; }
   }
 
@@ -982,6 +1000,25 @@ function drawRateChart(rows, input) {
                '" fill="var(--muted)" font-size="11" text-anchor="middle">' + rows[t].year + '</text>');
   }
 
+  // 股息率地板
+  var divFloor = input.dividendYield;
+  if (divFloor > 0 && divFloor < top) {
+    parts.push('<line x1="' + RPAD.left + '" y1="' + yOf(divFloor).toFixed(2) + '" x2="' + (RW - RPAD.right) +
+               '" y2="' + yOf(divFloor).toFixed(2) +
+               '" stroke="var(--equity)" stroke-width="1" stroke-dasharray="2 4" opacity="0.55"/>');
+    parts.push('<text x="' + (RPAD.left + 6) + '" y="' + (yOf(divFloor) - 5).toFixed(2) +
+               '" fill="var(--equity)" font-size="10.5" opacity="0.8">股息率地板 ' +
+               divFloor.toFixed(2) + '%</text>');
+  }
+
+  // 淨提取率（實際需賣出的部分）
+  for (var q = 0; q < rows.length - 1; q++) {
+    parts.push('<line x1="' + xOf(q).toFixed(2) + '" y1="' + yOf(Math.max(rows[q].netRate, 0)).toFixed(2) +
+               '" x2="' + xOf(q + 1).toFixed(2) + '" y2="' + yOf(Math.max(rows[q + 1].netRate, 0)).toFixed(2) +
+               '" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.7"/>');
+  }
+
+  // 總提取率
   for (var s = 0; s < rows.length - 1; s++) {
     var segClass = classify(Math.max(rows[s].drawRate, rows[s + 1].drawRate));
     parts.push('<line x1="' + xOf(s).toFixed(2) + '" y1="' + yOf(rows[s].drawRate).toFixed(2) +
@@ -1378,7 +1415,7 @@ function update() {
   stY1.className = "v " + classify(rows[0].drawRate);
 
   var last = rows[rows.length - 1];
-  var finalAssets = last.assets * (1 + input.totalReturn / 100) - last.grossDraw;
+  var finalAssets = last.assets * (1 + input.totalReturn / 100) - last.cashNeed;
   document.getElementById("stEquity").textContent = fmtYi(finalAssets - last.debt);
 
   var maxLtv = 0, maxLtvYear = rows[0].year;
@@ -1398,10 +1435,13 @@ function update() {
           + "<td>" + fmtWan(row.debt) + "</td>"
           + "<td>" + fmtWan(row.equity) + "</td>"
           + "<td>" + fmtWan(row.debtPayment) + "</td>"
-          + "<td>" + fmtWan(row.grossDraw) + "</td>"
+          + "<td>" + fmtWan(row.cashNeed) + "</td>"
           + "<td>" + fmtWan(row.dividend) + "</td>"
           + "<td>" + fmtWan(row.mustSell) + "</td>"
+          + "<td>" + (row.surplus > 0.5 ? fmtWan(row.surplus) : "—") + "</td>"
+          + "<td>" + fmtWan(row.grossDraw) + "</td>"
           + "<td" + tdCls + ">" + row.drawRate.toFixed(2) + "%</td>"
+          + "<td>" + row.netRate.toFixed(2) + "%</td>"
           + "<td>" + row.ltv.toFixed(1) + "%</td>"
           + "</tr>";
   }
@@ -1452,8 +1492,12 @@ function setupHover() {
       + '<div class="tt-row"><span>淨值</span><span style="color:var(--equity)">' + fmtWan(row.equity) + ' 萬</span></div>'
       + '<div class="tt-row"><span>年還款</span><span>' + fmtWan(row.debtPayment) + ' 萬</span></div>'
       + '<div class="tt-row"><span>收入合計</span><span>' + fmtWan(row.income) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>現金需求</span><span>' + fmtWan(row.cashNeed) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>股息</span><span>' + fmtWan(row.dividend) + ' 萬</span></div>'
+      + '<div class="tt-row"><span>需賣出</span><span>' + fmtWan(row.mustSell) + ' 萬</span></div>'
       + '<div class="tt-row"><span>總提取</span><span>' + fmtWan(row.grossDraw) + ' 萬</span></div>'
       + '<div class="tt-row"><span>總提取率</span><span style="color:' + colorOf(classify(row.drawRate)) + '">' + row.drawRate.toFixed(2) + '%</span></div>'
+      + '<div class="tt-row"><span>淨提取率</span><span>' + row.netRate.toFixed(2) + '%</span></div>'
       + '<div class="tt-row"><span>LTV</span><span>' + row.ltv.toFixed(1) + '%</span></div>';
 
     tooltip.classList.add("on");
